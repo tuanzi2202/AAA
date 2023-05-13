@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<!-- 待办：为部分网站添加简介 网站根据使用情况降序排序 添加BGM播放-->
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>指南针</title>
+    <style type="text/css">
+        /*全局样式*/
+        *{
+            /*去掉内外边距：*/
+            padding:0;
+            margin: 0;
+            /*去掉不必要的样式：*/
+            text-decoration:none;
+            list-style:none;
+        }
+        /*悬浮窗样式*/
+        #floating-box {
+            border-radius: 15px;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 0 10px 10px;
+            width: 275px;
+            height: 200px;
+            z-index: 100009;
+            margin: 5px -10px 0 0;
+            font-size: 15px;
+            background:#fff;
+            border: 2px solid #ddd;
+        }
+        /*悬浮窗按钮样式*/
+        #floating-box-btn{
+            /*按钮宽度=左边距+字体大小*字列数+右边距=40+16w
+              按钮高度=上边距+字体大小*字行数+下边距=20+16h*/
+            background-color: lightgray;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        /*侧栏右区域样式*/
+        .content{
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 6180px;
+            transition: 0.5s;
+        }
+        /*底部样式*/
+        .divd{
+            position: absolute;
+            top: 6180px;
+            height: 20px;
+            width: 100%;
+            color: #fff;
+            background-color: #202020;
+        }
+        /*侧边栏样式*/
+        .sidebar{
+            position: fixed;
+            left: -20%;
+            width: 20%;
+            height: 6180px;
+            color: azure;
+            background-color:#324257;
+            transition: right 0.5s;
+            transition: left 2s;
+        }
+        /*弹出侧边栏*/
+        .sidebar.open {
+            left: 0; /*侧边栏的左边缘与屏幕的左边缘对齐。这可以让侧栏显示在屏幕上，使其可见。*/
+        }
+        /*侧边栏开关按钮样式*/
+        .toggle-button {
+            position: relative;
+            top: 90px;
+            left: 0;
+        }
+        /*侧栏弹出后侧栏右区域位置*/
+        .content.open{
+            left: 20%;
+            width: 80%;
+        }
+         /*顶部样式*/
+        .divb{
+            height: 180px;
+            background-color:#222222;
+            color:#fff;
+        }
+         /*中间样式*/
+        .divc{
+            height: 6000px;
+            background: #d1ffd4;
+        }
+        /*列表样式*/
+        .libtc{
+            float: left;
+            text-align: center;
+            line-height: 25px;
+        }
+        /*列表内超链接样式*/
+        .libtc a{
+            color: #000000;
+            display: block;
+            width: 100px;
+            height: 50px;
+        }
+        .libtc a:hover{
+            background: #ccc;
+            color: chocolate;
+        }
+        /*分类盒子样式*/
+        .distinguish{
+            position: relative;
+            height:200px;
+            left: 10px;
+        }
+        /*分类标题样式*/
+        .distinguish_title{
+            font-size: 30px;
+        }
+    </style>
+</head>
+<body style="background-color: #484848;">
+
+<!--侧边栏-->
+<div class="sidebar">
+    <p>1.鼠标悬浮网站标题上显示详情</p>
+    <p>2.🛫 需科学上网</p>
+    <p>3.🧑‍💻 需登录<p>
+    <p>4.💰 需付费。请仔细识别，谨防受骗<p>
+</div>
+
+<!-- 悬浮窗 -->
+<div id="floating-box">
+    <span style="position: absolute;top: 10px;">SuperMenu</span>
+    <!--按钮间距为6px
+        left=前left+按钮宽度+按钮间距（第一个除外）
+        top=前top+按钮高度+按钮间距（第一个除外）-->
+    <a href="./index.html"><button id="floating-box-btn" style="position: absolute;top: 45px;left: 10px;">指南针</button></a>
+    <a href="./备忘.html"><button id="floating-box-btn" style="position: absolute;top: 45px;left: 104px;">记事本</button></a>
+    <a href="./博客.html"><button id="floating-box-btn" style="position: absolute;top: 45px;left: 198px;">笔记本</button></a>
+    <a href="./好物.html"><button id="floating-box-btn" style="position: absolute;top: 87px;left: 10px;">购物车</button></a>
+    <a href="./神的博物馆.html"><button id="floating-box-btn" style="position: absolute;top: 87px;left: 104px;">博物馆</button></a>
+    <a href="./资源.html"><button id="floating-box-btn" style="position: absolute;top: 87px;left: 198px;padding: 10px 28px;">宝库</button></a>
+    <a href="./未分类.html"><button id="floating-box-btn" style="position: absolute;top: 129px;left: 10px;padding: 10px 28px;">纸箱</button></a>
+    <a href="./留言.html"><button id="floating-box-btn" style="position: absolute;top: 129px;left: 104px;padding: 10px 28px;">留言</button></a>
+    <a href="./我的.html"><button id="floating-box-btn" style="position: absolute;top: 129px;left: 198px;padding: 10px 28px;">关于</button></a>
+</div>
+<!--悬浮窗js-->
+<script>
+    let isDragging = false; //记录 是否拖拽 。
+    let currentX; //记录 当前 鼠标的横纵坐标。
+    let currentY;
+    let initialX; //记录鼠标在拖拽 开始时 的横纵坐标。
+    let initialY;
+    let xOffset = 0; //记录拖拽悬浮窗的水平和垂直 偏移量 。
+    let yOffset = 0;
+    const floatingBox = document.querySelector("#floating-box"); //获取悬浮窗元素
+    //向悬浮窗绑定鼠标事件处理器，当鼠标在悬浮窗按下时，将触发事件
+    floatingBox.addEventListener("mousedown", dragStart);
+    //向整个页面的 body 元素绑定鼠标事件处理器。当控制鼠标时，将触发 "mouse..." 事件，并调用函数
+    document.body.addEventListener("mouseup", dragEnd);
+    //向整个电脑窗口绑定鼠标事件处理器，鼠标拖出浏览器也可以继续按住鼠标拖动
+    window.addEventListener("mousemove", drag);
+    //鼠标按下函数
+    function dragStart(e) {
+        e.preventDefault();
+        //因为移动函数计算鼠标偏移值要用到鼠标按下初始位置，通过鼠标实时变化位置与偏移变化值实时保持初始位置确定
+        initialX = e.clientX - xOffset;
+        initialY = e.clientY - yOffset;
+        isDragging = true;//打开移动函数开关
+    }
+    //鼠标抬起函数
+    function dragEnd(e) {
+        isDragging = false;//关闭移动函数开关
+    }
+    //鼠标移动函数
+    function drag(e) {
+        if (isDragging) {
+            e.preventDefault();
+            //因为在最后的位置改变函数中需要用到变化值，通过获取到的鼠标实时位置与按下函数获取的鼠标初始位置得到真实偏移量，
+            currentX = e.clientX - initialX; 
+            currentY = e.clientY - initialY;
+            // 限制悬浮窗的位置不能接触网页边界
+            if (currentX < - floatingBox.offsetLeft) {
+                currentX = - floatingBox.offsetLeft; //如果偏移距离大于拖动前悬浮窗左边与窗口的距离（即悬浮窗超出左边界），偏移值重新赋值
+            } else if (currentX > window.innerWidth - (floatingBox.offsetLeft+floatingBox.offsetWidth)) {
+                currentX = window.innerWidth - (floatingBox.offsetLeft+floatingBox.offsetWidth); //如果偏移距离大于拖动前悬浮窗右边与窗口的距离（即悬浮窗超出右边界），偏移值重新赋值
+            }
+            if (currentY < - floatingBox.offsetTop) {
+                currentY = - floatingBox.offsetTop; //如果偏移距离大于拖动前悬浮窗顶部与窗口的距离（即悬浮窗超出顶部边界），偏移值重新赋值
+            } else if (currentY > window.innerHeight - (floatingBox.offsetTop+floatingBox.offsetHeight)) {
+                currentY = window.innerHeight - (floatingBox.offsetTop+floatingBox.offsetHeight); //如果偏移距离大于拖动前悬浮窗底部边与窗口的距离（即悬浮窗超出底部边界），偏移值重新赋值
+            }
+            //用于按下函数同步偏移变化值保持初始位置确定
+            xOffset = currentX; 
+            yOffset = currentY;
+            //改变悬浮窗在页面上的全部像素位置
+            setTranslate(currentX, currentY, floatingBox); 
+        }
+    }
+    //位置改变函数
+    function setTranslate(xPos, yPos, el) {
+        /*
+        该函数接收三个参数：
+        xPos：元素在水平方向上的偏移量，以像素为单位。
+        yPos：元素在垂直方向上的偏移量，以像素为单位。
+        el：要转换的元素，是一个 HTML 元素对象。
+        将 el.style.transform 设置为一个 "translate3d" 转换，这样会使元素在页面上移动 xPos 像素和 yPos 像素。该转换使用 3D 坐标系，因此该函数实现的是平面内的平移。
+        */
+        el.style.transform = "translate3d(" + xPos + "px, " + yPos + "px, 0)"; //悬浮窗全部像素位置在页面根据鼠标位置变化同步平移变化
+    }
+</script>
+
+<!--侧栏右区域-->
+<div class="content">
+    <!--顶部区域-->
+    <div class="divb">
+        <!--侧边栏展开按钮-->
+        <button class="toggle-button">sidebar</button>
+        <!--侧边栏js-->
+        <script>
+            //获取侧边栏和侧边栏开关按钮
+            const toggleButton = document.querySelector('.toggle-button');
+            const sidebar = document.querySelector('.sidebar');
+            const content = document.querySelector('.content');
+            //为开关按钮添加点击事件，当点击按钮时
+            toggleButton.addEventListener('click', () => {
+            sidebar.classList.toggle('open'); //如果sidebar元素不具有open类，则该方法将添加该类；如果具有open类，则该方法将删除该类。这就允许通过点击按钮来在两种不同的状态之间切换侧栏：打开和关闭
+            content.classList.toggle('open'); 
+            });
+        </script>
+        <div style="display: flex;justify-content: center;align-items: center;">
+            <h1>Welcome to GOD'Compass</h1>
+        </div>
+    </div>
+
+    <!--中间区域-->
+    <div class="divc">
+        <!--网站导航-->
+        <ul>
+            <!--用得最多-->
+            <div class="distinguish" style="height:200px">
+                <br><li class="distinguish_title">常用</li><br>
+                <li class="libtc"><a href="https://chat.openai.com/chat" title="写代码、聊天、翻译">🛫ChatGPT</a></li>
+                <li class="libtc"><a href="https://www.bing.com/chat" title="结合GPT4的ai搜索引擎">🛫New Bing</a></li>
+                <li class="libtc"><a href="https://music.warhut.cn/" title="在线音乐播放">BGM</a></li>
+                <li class="libtc"><a href="https://krkr.xyz/" title="galgame游戏下载">花咲雨町</a></li>
+                <li class="libtc"><a href="http://127.0.0.1:5244/" title="本地部署的网盘管理工具">Alist</a></li>
+                <li class="libtc"><a href="https://www.aconvert.com/cn/" title="强大的格式转换工具支持多种格式">格式转换</a></li>
+                <li class="libtc"><a href="https://console.cloud.tencent.com/lighthouse/instance" title="腾讯云控制台">腾讯云</a></li>
+                <li class="libtc"><a href="https://auth.huaweicloud.com/authui" title="华为云控制台">华为云</a></li>
+                <li class="libtc"><a href="https://github.com/" title="著名代码开源网站">GitHub</a></li>
+                <li class="libtc"><a href="https://huggingface.co/" title="ai模型分享社区">🛫Huggingface</a></li>
+            </div>
+
+            <!--用得最多-->
+            <div class="distinguish" style="height:200px">
+                <br><li class="distinguish_title">大众</li><br>
+                <li class="libtc"><a href="https://www.baidu.com/">百度</a></li>
+                <li class="libtc"><a href="https://www.bilibili.com/">Bilibili</a></li>
+                <li class="libtc"><a href="https://www.zhihu.com/">知乎</a></li>
+                <li class="libtc"><a href="https://pan.baidu.com/">🧑‍💻百度云盘</a></li>
+                <li class="libtc"><a href="https://wx.mail.qq.com/">🧑‍💻QQ邮箱</a></li>
+                <li class="libtc"><a href="https://discord.com/channels/@me" title="国外聊天群组">🛫Discord</a></li>
+                <li class="libtc"><a href="https://www.youtube.com/" title="看国外视频">🛫Youtube</a></li>
+                <li class="libtc"><a href="https://m.twitch.tv/" title="国外直播平台">🛫Twitch</a></li>
+                <li class="libtc"><a href="https://myaccount.google.com/?hl=cn">🛫谷歌中心</a></li>
+                <li class="libtc"><a href="https://voice.google.com/u/0/messages">🛫谷歌Voice</a></li>
+            </div>
+
+            <!--集市-->
+            <div class="distinguish" style="height:200px">
+                <li class="distinguish_title">集市</li><br>
+                <li class="libtc"><a href="https://www.masadora.net/" title="海外周边待购">魔法集市</a></li>
+                <li class="libtc"><a href="https://kuaifaka.gq/" title="账号购买">苹果ID/GV专卖店</a></li>
+                <li class="libtc"><a href="https://chat.xingtupai.com/" title="账号购买">闪电发卡</a></li>
+                <li class="libtc"><a href="https://shop.terobox.com/" title="账号购买">BOX小铺</a></li>
+                <li class="libtc"><a href="https://openaikey.xyz/" title="账号购买">GPT账号</a></li>
+                <li class="libtc"><a href="https://nf.video/yinhe/web/" title="会员账号合租">银河录像局</a></li>
+                <li class="libtc"><a href="https://www.9417.fun/" title="游戏私服源码下载">9417</a></li>
+                <li class="libtc"><a href="https://hutue.cn/" title="游戏私服源码下载">糊涂鳄</a></li>
+            </div>
+
+            <!--二次元-->
+            <div class="distinguish" style="height:200px">
+                <li class="distinguish_title">二次元</li><br>
+                <li class="libtc"><a href="https://www.acg123.co/" title="各种二次元相关网站导航">二刺螈</a></li>
+                <li class="libtc"><a href="https://ciyuan.cat/" title="各种二次元相关网站导航">次元猫</a></li>
+                <li class="libtc"><a href="https://bgm.tv/" title="二次元资讯">bangumi</a></li>
+                <li class="libtc"><a href="https://krkr.xyz/" title="galgame游戏下载">花咲雨町</a></li>
+                <li class="libtc"><a href="https://www.kfpromax.com/index.php">绯月</a></li>
+                <li class="libtc"><a href="https://www.acgnsq.com/">ACGN社区</a></li>
+                <li class="libtc"><a href="https://yngal.com/home">初音的青葱</a></li>
+                <li class="libtc"><a href="https://acgngame.org/">Gal世界</a></li>
+                <li class="libtc"><a href="https://www.ymgal.games/archives">月幕</a></li>
+                <li class="libtc"><a href="https://www.haogal8.com/">好Gal</a></li>
+                <li class="libtc"><a href="https://www.summeread.com/">夏日社</a></li>
+            </div>
+
+            <!--导航-->
+            <div class="distinguish" style="height:200px">
+                <li class="distinguish_title">导航</li><br>
+                <li class="libtc"><a href="http://www.lsdhss.com/">猎手导航</a></li>
+                <li class="libtc"><a href="https://www.hifast.cn/">快导航</a></li>
+                <li class="libtc"><a href="https://www.xue8nav.com/">学吧导航</a></li>
+                <li class="libtc"><a href="http://www.world68.com/">国外网站大全</a></li>
+                <li class="libtc"><a href="https://c.runoob.com/">菜鸟工具</a></li>
+                <li class="libtc"><a href="https://www.iiice.cn/#/">超级导航</a></li>
+                <li class="libtc"><a href="https://404l.com/">迷鹿导航</a></li>
+                <li class="libtc"><a href="https://www.jspoo.com/">聚神铺导航</a></li>
+                <li class="libtc"><a href="https://www.tboxn.com/">Tbox导航</a></li>
+                <li class="libtc"><a href="https://www.ooee2022.top/">ooee收藏夹</a></li>
+                <li class="libtc"><a href="https://www.nbwz.com/">奶爸网站</a></li>
+                <li class="libtc"><a href="https://www.zhuayuya.com/">抓鱼鸭</a></li>
+                <li class="libtc"><a href="http://www.ainav.cn/">AI工具导航</a></li>
+                <li class="libtc"><a href="https://supertools.therundown.ai/">AI工具导航2</a></li>
+                <li class="libtc"><a href="https://ai-bot.cn/">AI工具导航3</a></li>
+                <li class="libtc"><a href="https://alternativeto.net/">官网导航</a></li>
+                <li class="libtc"><a href="https://search.chongbuluo.com/">虫部落快搜</a></li>
+                <li class="libtc"><a href="https://www.bookmarkearth.com/">书签地球</a></li>
+            </div>
+
+            <!--学习-->
+            <div class="distinguish" style="height:300px">
+                <li class="distinguish_title">学习</li><br>
+                <li class="libtc"><a href="http://i.mooc.chaoxing.com/">学习通</a></li>
+                <li class="libtc"><a href="http://www.educoder.net/">Educoder</a></li>
+                <li class="libtc"><a href="https://blog.csdn.net/weixin_53245132?type=collect">CSDN</a></li>
+                <li class="libtc"><a href="https://juejin.cn/">稀土掘金</a></li>
+                <li class="libtc"><a href="https://www.chsi.com.cn/">学信网</a></li>
+                <li class="libtc"><a href="https://www.runoob.com/">菜鸟教程</a></li>
+                <li class="libtc"><a href="https://www.r2coding.com/#/">代码道路</a></li>
+                <li class="libtc"><a href="http://dict.code-nav.cn/">编程词典</a></li>
+                <li class="libtc"><a href="https://mp.weixin.qq.com/s?__biz=MzU4ODI1MjA3NQ==&mid=2247489152&idx=1&sn=5a1e93a26643046b53e46a86b6a30da9&scene=21#wechat_redirect">嵌入式学习路线</a></li>
+                <li class="libtc"><a href="https://www.hello-algo.com/">Hello算法</a></li>
+                <li class="libtc"><a href="https://linux.vbird.org/">鸟哥的Linux私房菜</a></li>
+                <li class="libtc"><a href="https://www.biancheng.love/typinghome?type=key">编程派</a></li>
+                <li class="libtc"><a href="https://www.nettsz.com/">网络探索者</a></li>
+                <li class="libtc"><a href="https://www.ziyouwu.com/">自由屋博客</a></li>
+                <li class="libtc"><a href="https://nice456.com/" title="黑科技分享">88度空间</a></li>
+                <li class="libtc"><a href="https://www.smianao.com/" title="黑科技分享">smianao</a></li>
+                <li class="libtc"><a href="https://www.diybloghome.com/">DIY博客园</a></li>
+                <li class="libtc"><a href="https://docs.qq.com/sheet/DRU5MWHZCTHFGQnhM">免费公开课</a></li>
+                <li class="libtc"><a href="https://www.jb51.net/">脚本之家</a></li>
+                <li class="libtc"><a href="https://github.com/" title="著名代码开源网站">GitHub</a></li>
+                <li class="libtc"><a href="https://huggingface.co/"  title="Ai模型分享社区">🛫Huggingface</a></li>
+                <li class="libtc"><a href="https://civitai.com" title="Ai绘画模型分享">🛫Civitai</a></li>
+                <li class="libtc"><a href="https://www.hiascend.com/marketplace/case-studies" title="Ai应用案例展示">昇腾社区</a></li>
+                <li class="libtc"><a href="https://www.kuxai.com/" title="Ai技术交流社区">鲟曦研习社</a></li>
+                <li class="libtc"><a href="https://manaai.cn/#aiPrj" title="Ai项目分享下载">神力AI</a></li>
+                <li class="libtc"><a href="https://replicate.com/" title="在线运行Ai项目">🛫replicate</a></li>
+                <li class="libtc"><a href="https://www.52pojie.cn/" title="逆向破解分享">吾爱破解</a></li>
+                <li class="libtc"><a href="https://www.wpdaxue.com/" title="wordpress教学">WordPress大学</a></li>
+                <li class="libtc"><a href="https://www.oschina.net/" title="最新编程技术资讯">OSCHINA</a></li>
+            </div>
+
+            <!--影视-->
+            <div class="distinguish">
+                <li class="distinguish_title">影视</li><br>
+                <li class="libtc"><a href="https://www.555dd5.com/" title="免费看电视">555影视</a></li>
+                <li class="libtc"><a href="https://xn--gk3-suyingtvcom-lc40a84t7o9i3urako0c.suyingok.com/">速影TV</a></li>
+                <li class="libtc"><a href="http://www.iupian.com/">优片网</a></li>
+                <li class="libtc"><a href="https://www.ikandy1.fun/">爱看电影网</a></li>
+                <li class="libtc"><a href="https://www.wxtv.net/vodtype/1.html">无限影视</a></li>
+                <li class="libtc"><a href="https://www.cikeee.com/">电影日历</a></li>
+                <li class="libtc"><a href="https://www.555dyy.vip/win.html" title="555电影网址导航">555影视备用</a></li>
+            </div>
+
+            <!--音乐-->
+            <div class="distinguish">
+                <li class="distinguish_title">音乐</li><br>
+                <li class="libtc"><a href="https://tools.liumingye.cn/music/#//" title="在线听歌">MyfreeMP3</a></li>
+                <li class="libtc"><a href="https://music.warhut.cn/" title="在线听歌">BGM</a></li>
+                <li class="libtc"><a href="http://www.xmsj.org/" title="音乐下载">音乐搜索器</a></li>
+                <li class="libtc"><a href="https://music.y444.cn/" title="音乐下载">下载吧</a></li>
+            </div>
+
+            <!--工具-->
+            <div class="distinguish" style="height:500px">
+                <li class="distinguish_title">工具</li><br>
+                <li class="libtc"><a href="https://www.aconvert.com/cn/">格式转换1</a></li>
+                <li class="libtc"><a href="https://www.alltoall.net/">格式转换2</a></li>
+                <li class="libtc"><a href="https://convertio.co/zh/">格式转换3</a></li>
+                <li class="libtc"><a href="https://ipinfo.io/">IP信息1</a></li>
+                <li class="libtc"><a href="https://whoer.net/zh">IP信息2</a></li>
+                <li class="libtc"><a href="https://tool.lu/" title="各种实用在线工具">在线工具</a></li>
+                <li class="libtc"><a href="https://www.crxsoso.com/" title="好用的浏览器拓展分享">Crx插件市场</a></li>
+                <li class="libtc"><a href="https://airportal.cn/" title="简单好用的文件传输工具">Airportal</a></li>
+                <li class="libtc"><a href="https://rapidacg.gmgard.moe/index.html">百度网盘秒传链接转存</a></li>
+                <li class="libtc"><a href="https://www.tree.fm/">森林电台</a></li>
+                <li class="libtc"><a href="https://www.aha-music.com/#">aha识曲</a></li>
+                <li class="libtc"><a href="http://zhouql.vip/bilibili/">B站视频下载1</a></li>
+                <li class="libtc"><a href="https://xbeibeix.com/api/bilibili">B站视频下载2</a></li>
+                <li class="libtc"><a href="https://bilibili.iiilab.com/">B站视频下载3</a></li>
+                <li class="libtc"><a href="https://www.sojson.com/hexconvert.html">进制转换</a></li>
+                <li class="libtc"><a href="https://www.ooopn.com">小白工具箱</a></li>
+                <li class="libtc"><a href="https://xiezuocat.com/#/">秘塔写作猫</a></li>
+                <li class="libtc"><a href="https://inspo.midio.fun/">inspoAI写作</a></li>
+                <li class="libtc"><a href="https://hamibot.com/dashboard" title="在线管理Hamibot脚本">Hamibot</a></li>
+                <li class="libtc"><a href="https://sms-activate.org/cn">🛫SMS接码</a></li>
+                <li class="libtc"><a href="https://mail.td/zh">临时邮箱</a></li>
+                <li class="libtc"><a href="http://24mail.chacuo.net/">临时邮箱2</a></li>
+                <li class="libtc"><a href="https://ai.baidu.com/easydl/">EasyDL</a></li>
+                <li class="libtc"><a href="https://api.aa1.cn/">免费api</a></li>
+                <li class="libtc"><a href="https://github.com/public-apis/public-apis">全球免费api</a></li>
+                <li class="libtc"><a href="https://api.aagtool.top/">阿怪API接口站</a></li>
+                <li class="libtc"><a href="https://tools.liumingye.cn/">刘明野的工具箱</a></li>
+                <li class="libtc"><a href="https://chatexcel.com/">ChatExcel</a></li>
+                <li class="libtc"><a href="http://chatppt.yoo-ai.com/">ChatPPT</a></li>
+                <li class="libtc"><a href="https://modao.cc/brand">墨刀</a></li>
+                <li class="libtc"><a href="https://www.cluebenchmarks.com/clueai.html">ClueAi</a></li>
+                <li class="libtc"><a href="https://www.chatmind.tech/">ChatMind</a></li>
+                <li class="libtc"><a href="https://chatdoc.com/">ChatDoc</a></li>
+                <li class="libtc"><a href="https://chat2doc.cn/">Chat2Doc</a></li>
+                <li class="libtc"><a href="https://www.chatpdf.com/">ChatPDF</a></li>
+                <li class="libtc"><a href="https://www.roomgpt.io/dream">RoomGPT</a></li>
+                <li class="libtc"><a href="https://www.sqlkiller.com/">SQLKiller</a></li>
+                <li class="libtc"><a href="https://welm.weixin.qq.com/docs/introduction/">WeLm</a></li>
+                <li class="libtc"><a href="https://clipdrop.co/">Clipdrop</a></li>
+                <li class="libtc"><a href="https://sm.ms/" title="免费图床">sm.sm图床</a></li>
+                <li class="libtc"><a href="https://www.picb.cc/" title="免费图床">picb图床</a></li>
+                <li class="libtc"><a href="https://codegeex.cn/zh-CN/playground" title="Ai续写代码">CodeGeeX</a></li>
+                <li class="libtc"><a href="https://zhoubaotong.com/zh" title="输入工作内容通过Ai生成周报">🛫周报通</a></li>
+                <li class="libtc"><a href="https://app.writesonic.com/" title="国外在线工具箱">🛫writesonic</a></li>
+                <li class="libtc"><a href="http://www.zhaotaici.cn/" title="通过台词找电视">找台词</a></li>
+                <li class="libtc"><a href="https://trace.moe/" title="通过图片找动漫">以图搜番</a></li>
+                <li class="libtc"><a href="https://fse.agilestudio.cn/" title="输入文字描述自动匹配相关画面">33搜帧</a></li>
+                <li class="libtc"><a href="https://www.meiguodizhi.com/" title="美国地址生成器">美国地址生成器</a></li>
+                <li class="libtc"><a href="http://wlyml.com:1024/user/index.php" title="校园网免认证">网络云</a></li>
+                <li class="libtc"><a href="https://ghproxy.com/" title="github镜像下载">ghproxy</a></li>
+
+            </div>
+
+            <!--资源-->
+            <div class="distinguish">
+                <li class="distinguish_title">资源</li><br>
+                <li class="libtc"><a href="https://tg.qianfan.app/" title="各种资源搜索下载">千帆搜索</a></li>
+                <li class="libtc"><a href="https://www.btsearch.cc/" title="磁力种子搜索下载">磁力社区</a></li>
+                <li class="libtc"><a href="https://u.gitcafe.net/" title="各种资源黑科技下载">小纸条</a></li>
+                <li class="libtc"><a href="https://www.ruancang.net/#/sim" title="常用电脑软件下载">软仓</a></li>
+                <li class="libtc"><a href="https://softmall.net/" title="电脑手机软件下载">软猫</a></li>
+                <li class="libtc"><a href="https://xxxxx520.cam/" title="PC及模拟器游戏下载">switch520</a></li>
+                <li class="libtc"><a href="https://www.switch618.com/" title="PC及模拟器游戏下载">switch618</a></li>
+                <li class="libtc"><a href="https://steamzg.com/" title="PC及模拟器游戏下载">小叽资源</a></li>
+                <li class="libtc"><a href="https://www.yxhjgs.com/" title="PC及模拟器游戏下载">游戏怀旧灌水</a></li>
+                <li class="libtc"><a href="http://flysheep.ysepan.com/" title="PC及模拟器游戏下载">flysheep</a></li>
+                <li class="libtc"><a href="http://gbtgame.ysepan.com/" title="PC游戏下载">GBT乐赏</a></li>
+                <li class="libtc"><a href="https://www.oldmanemu.net/" title="模拟器游戏下载">老男人游戏网</a></li>
+                <li class="libtc"><a href="https://i3ds.fun/" title="3DS游戏下载">I3DS</a></li>
+                <li class="libtc"><a href="https://www.678vr.com/" title="VR资源下载">678VR游戏网</a></li>
+                <li class="libtc"><a href="https://pdfzj.com/" title="PDF下载">PDF之家</a></li>
+                <li class="libtc"><a href="https://www.guyunsq.com/" title="分享游戏资源社区">古韵游戏社区</a></li>
+                <li class="libtc"><a href="https://rargb.to" title="国外资源下载">RARGB</a></li>
+                <li class="libtc"><a href="https://thepiratebay.org" title="国外资源下载">海盗湾</a></li>
+                <li class="libtc"><a href="https://s1.byrutor.com/" title="电脑游戏下载">🛫俄罗斯游戏网站</a></li>
+                <li class="libtc"><a href="https://fitgirl-repacks.site" title="PC及模拟器游戏下载">fitgirl</a></li>
+                <li class="libtc"><a href="https://sway.office.com/6bbhaAc40C11Q6Gh" title="switch520防迷路">Switch520防迷路</a></li>
+            </div>
+
+            <!--素材-->
+            <div class="distinguish">
+                <li class="distinguish_title">素材</li><br>
+                <li class="libtc"><a href="https://iconpark.oceanengine.com/home" title="图标库">iconpark</a></li>
+                <li class="libtc"><a href="https://remixicon.com/" title="开源图标库">Remix Icon</a></li>
+                <li class="libtc"><a href="https://ionic.io/ionicons" title="开源图标">ionicons</a></li>
+                <li class="libtc"><a href="https://loading.io/" title="动画图标">loading.io</a></li>
+                <li class="libtc"><a href="https://pixabay.com/zh/" title="免费商用图片、视频、音乐、音效素材">pixabay</a></li>
+                <li class="libtc"><a href="https://mixkit.co/free-stock-music/" title="免费商用音乐素材">mixkit素材</a></li>
+                <li class="libtc"><a href="https://unsplash.com/" title="免费商用图片素材">unsplash</a></li>
+                <li class="libtc"><a href="https://www.pexels.com/zh-cn/" title="免费商用图片素材">pexels</a></li>
+                <li class="libtc"><a href="https://www.foodiesfeed.com/" title="免费商用图片素材">foodiesfeed</a></li>
+                <li class="libtc"><a href="https://cc0.cn/" title="免费商用图片素材">cc0</a></li>
+                <li class="libtc"><a href="https://stocksnap.io/" title="免费商用图片素材">stocksnap</a></li>
+                <li class="libtc"><a href="https://skuawk.com/" title="免费商用图片素材">skuawk</a></li>
+                <li class="libtc"><a href="https://www.stockvault.net/" title="免费商用图片素材">🛫stockvault</a></li>
+                <li class="libtc"><a href="https://kaboompics.com/" title="免费商用图片素材">kaboompics</a></li>
+                <li class="libtc"><a href="https://www.ooopic.com/" title="正版商用图片素材">我图网</a></li>
+                <li class="libtc"><a href="https://pngimg.com/" title="免抠图片素材">pngimg</a></li>
+                <li class="libtc"><a href="https://aicolors.co/" title="Ai配色">🛫Ai Color</a></li>
+                <li class="libtc"><a href="http://www.2kil.com/" title="配色">中国传统颜色</a></li>
+                <li class="libtc"><a href="http://zhongguose.com/" title="配色">中国传统颜色2</a></li>
+                <li class="libtc"><a href="https://avamake.com/" title="矢量头像制作">ava</a></li>
+                <li class="libtc"><a href="https://vue-color-avatar.vercel.app/" title="矢量头像制作">Color Avatar</a></li>
+                <li class="libtc"><a href="https://getcssscan.com/css-box-shadow-examples?ref=producthunt" title="CSS阴影效果">CSS Scan</a></li>
+            </div>
+
+            <!--壁纸-->
+            <div class="distinguish">
+                <li class="distinguish_title">壁纸</li><br>
+                <li class="libtc"><a href="https://pic.netbian.com/new/">彼岸图网</a></li>
+                <li class="libtc"><a href="https://bz.zzzmh.cn">极简壁纸</a></li>
+                <li class="libtc"><a href="http://dimtown.com/">次元小镇</a></li>
+            </div>
+
+            <!--机场-->
+            <div class="distinguish">
+                <li class="distinguish_title">机场</li><br>
+                <li class="libtc"><a href="https://linghunyun.com/#/dashboard">灵魂云</a></li>
+                <li class="libtc"><a href="https://www.tapfog.net/#/dashboard">TapFog</a></li>
+                <li class="libtc"><a href="https://www.v2ny.top">奈云</a></li>
+                <li class="libtc"><a href="https://www.paofu.cloud/">泡芙云</a></li>
+                <li class="libtc"><a href="https://www.flyint999.com/">飞数云</a></li>
+                <li class="libtc"><a href="https://juzi30.com/">橘子云</a></li>
+                <li class="libtc"><a href="https://ca.bitznetuk.com/">BitzNet</a></li>
+                <li class="libtc"><a href="https://bat.vpnb.net/zh/">Bat</a></li>
+            </div>
+
+            <!--GPU-->
+            <div class="distinguish">
+                <li class="distinguish_title">GPU</li><br>
+                <li class="libtc"><a href="https://colab.research.google.com/drive/" title="谷歌免费GPU部署推理模型">🛫Colab</a></li>
+                <li class="libtc"><a href="https://drive.google.com/drive/u/1/my-drive" title="配合Colab使用">🛫谷歌云端硬盘</a></li>
+                <li class="libtc"><a href="https://www.autodl.com/home">AutoDL</a></li>
+                <li class="libtc"><a href="https://www.bitahub.com/">Bitahub</a></li>
+                <li class="libtc"><a href="https://www.kaggle.com/code">kaggle</a></li>
+                <li class="libtc"><a href="https://cloud.tencent.com/act/pro/gpu-study">腾讯云</a></li>
+                <li class="libtc"><a href="https://www.qingcloud.com/products/gpu-instance">青云</a></li>
+            </div>
+
+            <!--AI绘画-->
+            <div class="distinguish">
+                <li class="distinguish_title">AI绘画</li><br>
+                <li class="libtc"><a href="https://draft.art/drawing" title="ai绘画">Draft</a></li>
+                <li class="libtc"><a href="http://m.yjai.art/pages/painting/painting" title="ai绘画">意间</a></li>
+                <li class="libtc"><a href="https://printidea.art/" title="ai绘画">造梦日记</a></li>
+                <li class="libtc"><a href="https://wenxin.baidu.com/ernie-vilg" title="ai绘画">文心</a></li>
+                <li class="libtc"><a href="https://yige.baidu.com/" title="ai绘画">文心一格</a></li>
+                <li class="libtc"><a href="https://www.wujiebantu.com/ai" title="ai绘画">无界版图</a></li>
+                <li class="libtc"><a href="https://www.aizuohua.com/#/dashboard" title="ai绘画">爱作画</a></li>
+                <li class="libtc"><a href="https://www.rightbrain.art/text2Image" title="ai绘画">Vega</a></li>
+                <li class="libtc"><a href="https://labs.openai.com/">🛫DALL E</a></li>
+                <li class="libtc"><a href="https://deepdreamgenerator.com/generator">🛫deep dream</a></li>
+                <li class="libtc"><a href="https://dream.ai/create">🛫WOMBO</a></li>
+                <li class="libtc"><a href="https://starryai.com/app/create">🛫starryai</a></li>
+                <li class="libtc"><a href="https://beta.dreamstudio.ai/generate">🛫Dream Studio</a></li>
+                <li class="libtc"><a href="https://art.elbo.ai/">🛫ELBO</a></li>
+                <li class="libtc"><a href="https://novelai.dev/">Novelai.dev</a></li>
+                <li class="libtc"><a href="https://www.wujieai.com/tag-generator" title="ai绘画提示词">无界咒语</a></li>
+                <li class="libtc"><a href="https://aitag.top/" title="ai绘画提示词">魔咒百科</a></li>
+                <li class="libtc"><a href="http://www.prompttool.com/NovelAI" title="ai绘画提示词">词图</a></li>
+                <li class="libtc"><a href="https://tools.miku.ac/novelai_tag/" title="ai绘画提示词">miku魔咒</a></li>
+                <li class="libtc"><a href="https://toonme.com/" title="卡通照片转换">toonme</a></li>
+                <li class="libtc"><a href="https://waifulabs.com/" title="二次元头像生成">waifulabs</a></li>
+                <li class="libtc"><a href="http://www.123114514.xyz/" title="SD webui资源站">SD webui资源站</a></li>
+                <li class="libtc"><a href="https://models.paomiantv.cn/models" title="AI绘画模型下载">炼丹阁</a></li>
+                <li class="libtc"><a href="https://spell.novelai.dev/" title="从 Stable Diffusion 生成的图片读取 prompt / Stable Diffusion 模型解析">SD法术解析</a></li>
+            </div>
+
+            <!--AI图片增强-->
+            <div class="distinguish">
+                <li class="distinguish_title">AI图片增强</li><br>
+                <li class="libtc"><a href="http://www.soutushenqi.com/toolsView?uniqueKey=aiMagnification">搜图神器图片放大</a></li>
+                <li class="libtc"><a href="https://bigjpg.com/">Bigjpg图片放大</a></li>
+                <li class="libtc"><a href="http://waifu2x.udp.jp/">waifu2x图片放大</a></li>
+                <li class="libtc"><a href="https://waifu2x.booru.pics/">waifu2x动漫专用图片放大</a></li>
+                <li class="libtc"><a href="https://tools.miku.ac/anime4k/">miku 动漫图片无损放大</a></li>
+                <li class="libtc"><a href="https://imglarger.com/">imglarger图片增强</a></li>
+            </div>
+
+            <!--音频处理-->
+            <div class="distinguish">
+                <li class="distinguish_title">音频处理</li><br>
+                <li class="libtc"><a href="https://airmore.cn/extract-audio-online">在线提取音频</a></li>
+                <li class="libtc"><a href="https://melody.ml/">melody音频分离</a></li>
+                <li class="libtc"><a href="https://vocalremover.org/zh/cutter">音频切割器</a></li>
+            </div>
+
+            <!--去水印-->
+            <div class="distinguish">
+                <li class="distinguish_title">去水印</li><br>
+                <li class="libtc"><a href="https://quququ.cn/">去去去</a></li>
+                <li class="libtc"><a href="https://magicstudio.com/magiceraser">Magic Eraser</a></li>
+                <li class="libtc"><a href="https://www.aiseesoft.com/watermark-remover-online/">Aiseesoft</a></li>
+                <li class="libtc"><a href="https://www.magiceraser.io/">魔力擦</a></li>
+                <li class="libtc"><a href="https://www.duckbb.cn/">短视频去水印</a></li>
+            </div>
+
+            <!--抠图-->
+            <div class="distinguish">
+                <li class="distinguish_title">抠图</li><br>
+                <li class="libtc"><a href="https://www.remove.bg/zh/">AI抠图</a></li>
+                <li class="libtc"><a href="https://www.picup.shop/">皮卡ai抠图</a></li>
+            </div>
+
+            <!--网页游戏-->
+            <div class="distinguish">
+                <li class="distinguish_title">网页游戏</li><br>
+                <li class="libtc"><a href="https://www.lumosity.com/en/">lumosity</a></li>
+                <li class="libtc"><a href="https://www.crazygames.com/">CrazyGames</a></li>
+            </div>
+
+            <!--ChatGPT-->
+            <div class="distinguish">
+                <li class="distinguish_title">GPT</li><br>
+                <li class="libtc"><a href="https://github.com/lzwme/chatgpt-sites">镜像合集</a></li>
+                <li class="libtc"><a href="https://poe.com/">🛫🧑‍💻poe</a></li>
+                <li class="libtc"><a href="https://nat.dev/">🧑‍💻OpenPlayground</a></li>
+                <li class="libtc"><a href="https://app.slack.com/client/">🧑‍💻Claude</a></li>
+                <li class="libtc"><a href="https://geekch.art/#/chat/">🛫chat1</a></li>
+                <li class="libtc"><a href="https://chat.binjie.site:7777/#/chat/">chat2</a></li>
+                <li class="libtc"><a href="https://zcc.app/">chat3</a></li>
+                <li class="libtc"><a href="https://ai.usesless.com/scene">chat4</a></li>
+                <li class="libtc"><a href="https://chat.gukoohot.com/#/chat/1002">chat5</a></li>
+                <li class="libtc"><a href="https://codenews.cc/chatgpt">chat6</a></li>
+                <li class="libtc"><a href="https://www.bz1y.cn/#/">chat7</a></li>
+                <li class="libtc"><a href="https://gpts.wxredcover.cn/">chat8</a></li>
+                <li class="libtc"><a href="https://chatgpt35.theinspiredgroup.com/">chat9</a></li>
+                <li class="libtc"><a href="https://chat.extkj.cn/#/chat/1002">chat10</a></li>
+                <li class="libtc"><a href="https://greengpt.app/chat">chat11</a></li>
+                <li class="libtc"><a href="https://aka.mydog.buzz/">chat12</a></li>
+                <li class="libtc"><a href="https://chat10.xeasy.me/">chat13</a></li>
+                <li class="libtc"><a href="https://free.anzz.top/#/chat/1002">chat14</a></li>
+                <li class="libtc"><a href="https://chat.forchange.cn/">chat15</a></li>
+                <li class="libtc"><a href="https://ai.bo-e.com">chat16</a></li>
+                <li class="libtc"><a href="https://chat.plexpt.com/chat">智造喵</a></li>
+                <li class="libtc"><a href="https://hotoke.ai/">机械佛</a></li>
+                <li class="libtc"><a href="https://www.steamship.com/workspaces/gpt-4-ad0/plugins/gpt-4-ad0">steamship</a></li>
+                <li class="libtc"><a href="https://ora.sh/openai/gpt4">🛫Ora</a></li>
+                <li class="libtc"><a href="http://auto.1chat.chat:3000/">浩瀚智聊</a></li>
+                <li class="libtc"><a href="https://you.com/" title="AI搜索引擎">🛫You</a></li>
+                <li class="libtc"><a href="https://www.phind.com/" title="AI搜索引擎">phind</a></li>
+                <li class="libtc"><a href="https://aichat.fiime.cn/" title="openai api key调用">phind</a></li>
+            </div>
+
+            <!--其他-->
+            <div class="distinguish">
+                <li class="distinguish_title">其他</li><br>
+                <li class="libtc"><a href="https://www.dbbqb.com/">逗比拯救世界</a></li>
+                <li class="libtc"><a href="http://weavesilk.com/">Silk</a></li>
+                <li class="libtc"><a href="https://jc.pep.com.cn/">中小学教材电子版</a></li>
+                <li class="libtc"><a href="https://osu.ppy.sh/home">OSU</a></li>
+                <li class="libtc"><a href="https://www.pianduanku.com/">片段库</a></li>
+                <li class="libtc"><a href="https://job.hut.edu.cn/">湖南工业大学就业信息网</a></li>
+                <li class="libtc"><a href="http://hnutd.bysjy.com.cn/">科技学院招生就业信息网</a></li>
+                <li class="libtc"><a href="https://nulls.gg/servers/nulls-brawl/download/">荒野乱斗Null</a></li>
+                <li class="libtc"><a href="http://www.wwtj.top/">广场</a></li>
+                <li class="libtc"><a href="https://rationale.jina.ai/">🛫AI决策</a></li>
+                <li class="libtc"><a href="https://www.autodl.com/docs/">AutoDL文档</a></li>
+                <li class="libtc"><a href="https://alist.nn.ci/zh/guide/">Alist文档</a></li>
+                <li class="libtc"><a href="https://docs.cfw.lbyczf.com/">CFW文档</a></li>
+                <li class="libtc"><a href="https://cn.vuejs.org/guide/introduction.html">Vue文档</a></li>
+                <li class="libtc"><a href="https://platform.openai.com/account/api-keys">🛫OpenaiApi</a></li>
+                <li class="libtc"><a href="https://platform.openai.com/tokenizer" title="OpenAI API查询一串指定的文本到底需要耗费多少个token(钱💰)">🛫tokenizer</a></li>
+                <li class="libtc"><a href="https://depay.depay.one/web-app/register-h5">depay</a></li>
+                <li class="libtc"><a href="https://www.yituyu.com/tag/12/p13/">艺图语</a></li>
+                <li class="libtc"><a href="https://wiki.52poke.com/wiki/%E4%B8%BB%E9%A1%B5">神奇宝贝百科</a></li>
+                <li class="libtc"><a href="https://bugxia.com/" title="游戏N2N联机">Bug侠</a></li>
+                <li class="libtc"><a href="https://www.allhistory.com/" title="学习世界历史">全历史</a></li>
+                <li class="libtc"><a href="http://www.chinaprice.com.cn/">中国物价网</a></li>
+            </div>
+
+        </ul>
+
+    </div>
+</div>
+
+
+
+<!--底部信息-->
+<div class="divd">版权信息</div>
+
+</body>
+</html>
